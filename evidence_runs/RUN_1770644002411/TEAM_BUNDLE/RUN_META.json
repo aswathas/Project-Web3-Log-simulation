@@ -1,0 +1,25 @@
+{
+  "run_id": "RUN_1770644002411",
+  "chain_id": 31337,
+  "created_at": "2026-02-09T13:34:29.637Z",
+  "head_block_start": 0,
+  "head_block_end": 1272,
+  "total_tx_requested": 1000,
+  "user_count": 50,
+  "shard_size": 5000,
+  "checkpoint_every": 500,
+  "snapshot_user_cap": 120,
+  "tx_exported_success": 1004,
+  "failures_count": 1,
+  "notes": {
+    "traces": "best-effort via debug_traceTransaction(callTracer); may be missing if node doesn't support",
+    "state_diff": "best-effort via debug_traceTransaction(prestateTracer/stateDiffTracer); may be null if node doesn't support; contains pre-state storage and balance info",
+    "approvals": "ERC20 Approval events decoded from receipt logs; enables allowance abuse detection",
+    "allowance_edges": "approval events as directed edges for graph analysis",
+    "derived": "neutral; no attacker labels included in TEAM_BUNDLE",
+    "codes": "eth_getCode for all snapshotted addresses (contracts + bounded EOAs)",
+    "token_meta": "ERC20 name/symbol/decimals for token contracts",
+    "storage_snapshots": "targeted storage reads for key contract slots (safe, minimal)",
+    "abi_export": "ABI files, bytecode, and address mappings in ABI/ directory"
+  }
+}

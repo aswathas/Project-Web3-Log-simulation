@@ -1,0 +1,47 @@
+[
+  {
+    "attack": "reentrancy",
+    "at": 300,
+    "attacker": "0x9586A4833970847aef259aD5BFB7aa8901DDf746",
+    "tx": null
+  },
+  {
+    "attack": "access_control",
+    "at": 700,
+    "attacker": "0x0e9971c0005D91336c1441b8F03c1C4fe5FB4584",
+    "txs": [
+      "0x4be442c5bd2c469647e4bf0a593627186291e8a979a93f59a00cf5e4113430cd",
+      "0xeaa0baae94a7a3837d94e2f25af87cdffec34afff0a267f4cef37bc937c04ee9"
+    ]
+  },
+  {
+    "attack": "allowance_drain",
+    "at": 1100,
+    "attacker": "0x9586A4833970847aef259aD5BFB7aa8901DDf746",
+    "victim": "0x73B3074ac649A8dc31c2C90a124469456301a30F",
+    "txs": [
+      "0x8645870e5bb0eb23d2158c417c62572a325985f59d167b38c01fdfb798ccf09c",
+      "0x21e01cb5313487bc913fe7ca2ca11ac51f8fb4ed7cb4d08bdcbad6279e645722"
+    ]
+  },
+  {
+    "attack": "sandwich",
+    "at": 1500,
+    "attacker": "0x9586A4833970847aef259aD5BFB7aa8901DDf746",
+    "victim": "0x6d69F301d1Da5C7818B5e61EECc745b30179C68b",
+    "txs": [
+      "0x1ab2401573b99751615c5be519583eeb6ae49141d51103b7440d2bac10a760a8",
+      "0xea3f6e6f37bd5614e201cdb7fccfbf67e3f738e10b68c618a4eadadd207288aa",
+      "0x0d0029dfd2e2a74de822883a6a964f885a377e8a45e921b9f5c32ff1fdceb770"
+    ]
+  },
+  {
+    "attack": "price_manipulation_like",
+    "at": 1800,
+    "attacker": "0x9586A4833970847aef259aD5BFB7aa8901DDf746",
+    "txs": [
+      "0xec34be75c24316d852ee7e6a5553975a00fd076ba534ce43bed10c28a24d2152",
+      "0x34aaf7ec8ff85dfcc54f5c302f3e8a706800800228e70031b9f7d9dfebf0a015"
+    ]
+  }
+]

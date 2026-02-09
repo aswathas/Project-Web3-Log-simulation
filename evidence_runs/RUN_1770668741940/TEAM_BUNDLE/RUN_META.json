@@ -1,0 +1,26 @@
+{
+  "run_id": "RUN_1770668741940",
+  "chain_id": 31337,
+  "created_at": "2026-02-09T20:26:51.610Z",
+  "head_block_start": 0,
+  "head_block_end": 1272,
+  "total_tx_requested": 1000,
+  "user_count": 50,
+  "shard_size": 5000,
+  "checkpoint_every": 500,
+  "snapshot_user_cap": 120,
+  "tx_exported_success": 1004,
+  "failures_count": 1,
+  "notes": {
+    "directory_structure": "Organized into RAW/{chain,execution,state,code} and DERIVED/{timeline,flows,behavior,execution,approvals,governance,balances,mempool}",
+    "address_profile": "EXPANDED: Captures ALL participants with tx counts, gas spent, ETH/ERC20 flows, call targets, and temporal bounds",
+    "state_proof": "Balance snapshots at checkpoint blocks enable before/after state reconstruction",
+    "internal_transfers": "Extracted from callTracer; any call with value > 0 emitted as internal_native_transfer",
+    "block_ordering": "Block transaction ordering from receipt.transactionIndex enables MEV/sandwich detection",
+    "revert_decoding": "Improved: decodes Error(string), Panic(uint256), and trace revertReason fields",
+    "allowance_usage": "Links Approval events to transferFrom calls for abuse detection",
+    "mempool_capture": "SIM-ONLY via eth_pendingTransactions; optional and may be empty",
+    "governance_tracking": "Storage slot monitoring for known admin/treasury/fee slots",
+    "schema_version": "See META/schema_version.json for full doc_type registry"
+  }
+}

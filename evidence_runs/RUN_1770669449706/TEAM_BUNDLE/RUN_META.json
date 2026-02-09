@@ -1,0 +1,32 @@
+{
+  "run_id": "RUN_1770669449706",
+  "chain_id": 31337,
+  "created_at": "2026-02-09T20:38:39.504Z",
+  "head_block_start": 0,
+  "head_block_end": 1272,
+  "total_tx_requested": 1000,
+  "user_count": 50,
+  "shard_size": 5000,
+  "checkpoint_every": 500,
+  "snapshot_user_cap": 120,
+  "tx_exported_success": 1004,
+  "failures_count": 1,
+  "notes": {
+    "directory_structure": "Organized into RAW/{chain,execution,state,code} and DERIVED/{timeline,flows,behavior,execution,approvals,governance,balances,mempool}",
+    "address_profile": "EXPANDED: Captures ALL participants with tx counts, gas spent, ETH/ERC20 flows, call targets, and temporal bounds",
+    "state_proof": "Balance snapshots at checkpoint blocks enable before/after state reconstruction",
+    "internal_transfers": "Extracted from callTracer; any call with value > 0 emitted as internal_native_transfer",
+    "block_ordering": "Block transaction ordering from receipt.transactionIndex enables MEV/sandwich detection",
+    "revert_decoding": "Improved: decodes Error(string), Panic(uint256), and trace revertReason fields",
+    "allowance_usage": "IMPROVED: Links Approval events to transferFrom calls for abuse detection; now catches more matching patterns",
+    "mempool_capture": "SIM-ONLY via eth_pendingTransactions; optional and may be empty on Anvil",
+    "governance_tracking": "Storage snapshots available in RAW/state; governance folder files intentionally empty - see explanation below",
+    "empty_files_explanation": {
+      "token_balance_deltas": "Tracked via asset_transfers (ERC20 Transfer events). Raw snapshots in RAW/state/token_balance_snapshots; to compute deltas, compare snapshots before/after key transactions. Asset flow analysis covers 90% of use cases.",
+      "admin_changes_critical_slot_deltas": "Require comparing storage state before/after block execution. Raw snapshots available in RAW/state/storage_snapshots. Anvil limitation: prestateTracer only provides pre-state. Full implementation requires Geth/Erigon state diffs. Manual comparison possible using storage_snapshots data.",
+      "revert_reasons": "Only emitted for reverted transactions. Empty if simulation has mostly successful txs (common in synthetic scenarios).",
+      "mempool_pending": "SIM-ONLY. May be empty on Anvil during normal mining. NOT available on real chains (mempool is ephemeral, not queryable historically)."
+    },
+    "schema_version": "See META/schema_version.json for full doc_type registry"
+  }
+}
