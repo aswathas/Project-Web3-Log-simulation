@@ -221,7 +221,7 @@ function prestateToStateDiff(prestateOutput, txHash, blockNumber) {
       }
 
       const diff = {
-        doc_type: "state_diff",
+        doc_type: "prediff",
         tx_hash: txHash,
         block_number: blockNumber,
         address: addr,
@@ -506,7 +506,7 @@ async function main() {
   const logsW     = ndjsonWriter(rawDir, "logs_events", SHARD_SIZE);
   const tracesW   = ndjsonWriter(rawDir, "traces_call", SHARD_SIZE);
   const snapsW    = ndjsonWriter(rawDir, "snapshots_balances", SHARD_SIZE);
-  const stateDiffW = ndjsonWriter(rawDir, "state_diff", SHARD_SIZE);
+  const stateDiffW = ndjsonWriter(rawDir, "prediff", SHARD_SIZE);
 
   const seenBlocks = new Set();
 
@@ -548,7 +548,7 @@ async function main() {
     if (prestate) {
       const stateDiffs = prestateToStateDiff(prestate, h, rc.blockNumber);
       for (const diff of stateDiffs) {
-        stateDiffW.write({ doc_type: "state_diff", run_id: runId, ...diff });
+        stateDiffW.write({ doc_type: "prediff", run_id: runId, ...diff });
       }
     }
 
@@ -1103,14 +1103,67 @@ async function main() {
 
   ensureDir(team); ensureDir(research);
 
+  // Function to copy ABI folder but exclude attacker contract ABIs for TEAM_BUNDLE
+  function copyABIDirFiltered(src, dst, excludeAttackers = false) {
+    ensureDir(dst);
+    const attacker_contracts = ["ReentrancyAttacker", "AdminConfigBug"];
+    
+    for (const ent of fs.readdirSync(src, { withFileTypes: true })) {
+      const s = path.join(src, ent.name);
+      const d = path.join(dst, ent.name);
+      
+      if (ent.isDirectory()) {
+        // For abi and bytecode subdirs, filter files
+        if (excludeAttackers && (ent.name === "abi" || ent.name === "bytecode")) {
+          ensureDir(d);
+          for (const file of fs.readdirSync(s, { withFileTypes: true })) {
+            if (file.isFile()) {
+              let isAttacker = false;
+              for (const attacker of attacker_contracts) {
+                if (file.name.includes(attacker)) {
+                  isAttacker = true;
+                  break;
+                }
+              }
+              if (!isAttacker) {
+                fs.copyFileSync(path.join(s, file.name), path.join(d, file.name));
+              }
+            }
+          }
+        } else {
+          copyDir(s, d);
+        }
+      } else if (ent.name === "addresses.json" && excludeAttackers) {
+        // Filter addresses.json to remove attacker contracts for TEAM_BUNDLE
+        const fullAddrs = JSON.parse(fs.readFileSync(s, "utf8"));
+        const filteredAddrs = {
+          run_id: fullAddrs.run_id,
+          created_at: fullAddrs.created_at,
+          contracts: {
+            token: fullAddrs.contracts.token,
+            stable: fullAddrs.contracts.stable,
+            vault: fullAddrs.contracts.vault,
+            amm: fullAddrs.contracts.amm
+            // reent and adminBug excluded for TEAM_BUNDLE
+          },
+          snapshotted_users: fullAddrs.snapshotted_users
+          // attackers list excluded for TEAM_BUNDLE
+        };
+        writeJSON(d, filteredAddrs);
+      } else {
+        fs.copyFileSync(s, d);
+      }
+    }
+  }
+
   // Copy RAW + DERIVED + ABI to both
   copyDir(rawDir, path.join(team, "RAW"));
   copyDir(derivedDir, path.join(team, "DERIVED"));
-  copyDir(abiDir, path.join(team, "ABI"));
+  copyABIDirFiltered(abiDir, path.join(team, "ABI"), true);  // Exclude attacker ABIs for TEAM
 
   copyDir(rawDir, path.join(research, "RAW"));
   copyDir(derivedDir, path.join(research, "DERIVED"));
-  copyDir(abiDir, path.join(research, "ABI"));
+  copyDir(abiDir, path.join(research, "ABI"));  // Full ABIs for RESEARCH
 
   // TEAM README (no spoilers)
   writeText(path.join(team, "README.md"),
@@ -1191,7 +1244,7 @@ Use this to validate the team's findings or create training material.
     failures_count: failures.length,
     notes: {
       traces: "best-effort via debug_traceTransaction(callTracer); may be missing if node doesn't support; used to extract trace_edges",
-      state_diff: "best-effort via debug_traceTransaction(prestateTracer); Anvil limitation: only pre-state available (mode='prestate_only'). balance_after and storage_after are null. Balances normalized from hex to decimal strings.",
+      prediff: "best-effort via debug_traceTransaction(prestateTracer); Anvil limitation: only pre-state available (mode='prestate_only'). balance_after and storage_after are null. Balances normalized from hex to decimal strings.",
       approvals: "ERC20 Approval events decoded from receipt logs; enables allowance abuse detection",
       allowance_edges: "approval events as directed edges for graph analysis",
       address_profile: "EXPANDED: now captures ALL tx activity (tx_out_count, tx_in_count, gas_spent_wei, total_gas_used, first_seen_ts, last_seen_ts) in addition to ETH/ERC20 flows. Every participant is now profileable.",

@@ -217,7 +217,7 @@ function prestateToStateDiff(prestateOutput, txHash, blockNumber) {
       }
 
       const diff = {
-        doc_type: "state_diff",
+        doc_type: "prediff",
         tx_hash: txHash,
         block_number: blockNumber,
         address: addr,
@@ -562,7 +562,7 @@ async function main() {
   const logsW     = ndjsonWriter(rawChainDir, "logs_events", SHARD_SIZE);
   const tracesW   = ndjsonWriter(rawExecDir, "traces_call", SHARD_SIZE);
   const snapsW    = ndjsonWriter(rawStateDir, "snapshots_balances", SHARD_SIZE);
-  const stateDiffW = ndjsonWriter(rawStateDir, "state_diff", SHARD_SIZE);
+  const stateDiffW = ndjsonWriter(rawStateDir, "prediff", SHARD_SIZE);
   const tokenBalSnapsW = ndjsonWriter(rawStateDir, "token_balance_snapshots", SHARD_SIZE);
   const storageSnapsW = ndjsonWriter(rawStateDir, "storage_snapshots", SHARD_SIZE);
   const codesW = ndjsonWriter(rawCodeDir, "codes", SHARD_SIZE);
@@ -608,7 +608,7 @@ async function main() {
     if (prestate) {
       const stateDiffs = prestateToStateDiff(prestate, h, rc.blockNumber);
       for (const diff of stateDiffs) {
-        stateDiffW.write({ doc_type: "state_diff", run_id: runId, ...diff });
+        stateDiffW.write({ doc_type: "prediff", run_id: runId, ...diff });
       }
     }
 
@@ -1341,7 +1341,7 @@ async function main() {
       { doc_type: "trace_call", source: "debug_traceTransaction(callTracer)" },
       // RAW/state
       { doc_type: "balance_snapshot", source: "ethers.getBalance" },
-      { doc_type: "state_diff", source: "debug_traceTransaction(prestateTracer)" },
+      { doc_type: "prediff", source: "debug_traceTransaction(prestateTracer)" },
       { doc_type: "token_balance_snapshot", source: "ERC20.balanceOf()" },
       { doc_type: "storage_snapshot", source: "ethers.getStorageAt" },
       // RAW/code
@@ -1385,14 +1385,67 @@ async function main() {
 
   ensureDir(team); ensureDir(research);
 
+  // Function to copy ABI folder but exclude attacker contract ABIs for TEAM_BUNDLE
+  function copyABIDirFiltered(src, dst, excludeAttackers = false) {
+    ensureDir(dst);
+    const attacker_contracts = ["ReentrancyAttacker", "AdminConfigBug"];
+    
+    for (const ent of fs.readdirSync(src, { withFileTypes: true })) {
+      const s = path.join(src, ent.name);
+      const d = path.join(dst, ent.name);
+      
+      if (ent.isDirectory()) {
+        // For abi and bytecode subdirs, filter files
+        if (excludeAttackers && (ent.name === "abi" || ent.name === "bytecode")) {
+          ensureDir(d);
+          for (const file of fs.readdirSync(s, { withFileTypes: true })) {
+            if (file.isFile()) {
+              let isAttacker = false;
+              for (const attacker of attacker_contracts) {
+                if (file.name.includes(attacker)) {
+                  isAttacker = true;
+                  break;
+                }
+              }
+              if (!isAttacker) {
+                fs.copyFileSync(path.join(s, file.name), path.join(d, file.name));
+              }
+            }
+          }
+        } else {
+          copyDir(s, d);
+        }
+      } else if (ent.name === "addresses.json" && excludeAttackers) {
+        // Filter addresses.json to remove attacker contracts for TEAM_BUNDLE
+        const fullAddrs = JSON.parse(fs.readFileSync(s, "utf8"));
+        const filteredAddrs = {
+          run_id: fullAddrs.run_id,
+          created_at: fullAddrs.created_at,
+          contracts: {
+            token: fullAddrs.contracts.token,
+            stable: fullAddrs.contracts.stable,
+            vault: fullAddrs.contracts.vault,
+            amm: fullAddrs.contracts.amm
+            // reent and adminBug excluded for TEAM_BUNDLE
+          },
+          snapshotted_users: fullAddrs.snapshotted_users
+          // attackers list excluded for TEAM_BUNDLE
+        };
+        writeJSON(d, filteredAddrs);
+      } else {
+        fs.copyFileSync(s, d);
+      }
+    }
+  }
+
   copyDir(path.join(base, "RAW"), path.join(team, "RAW"));
   copyDir(path.join(base, "DERIVED"), path.join(team, "DERIVED"));
-  copyDir(abiDir, path.join(team, "ABI"));
+  copyABIDirFiltered(abiDir, path.join(team, "ABI"), true);  // Exclude attacker ABIs for TEAM
   copyDir(metaDir, path.join(team, "META"));
 
   copyDir(path.join(base, "RAW"), path.join(research, "RAW"));
   copyDir(path.join(base, "DERIVED"), path.join(research, "DERIVED"));
-  copyDir(abiDir, path.join(research, "ABI"));
+  copyDir(abiDir, path.join(research, "ABI"));  // Full ABIs for RESEARCH
   copyDir(metaDir, path.join(research, "META"));
 
   // TEAM README
