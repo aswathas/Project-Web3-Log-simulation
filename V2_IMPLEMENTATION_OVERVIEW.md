@@ -432,7 +432,7 @@ CHECKPOINT_EVERY=1000 npx hardhat run scripts/pipeline_all.js
 SNAPSHOT_USER_CAP=30 npx hardhat run scripts/pipeline_all.js
 
 # Reduce total txs for testing
-TOTAL_TX=1000 npx hardhat run scripts/pipeline_all.js
+TOTAL_TX=1000 npx hardhat run scripts/pipeline_all_v2.js
 ```
 
 ---

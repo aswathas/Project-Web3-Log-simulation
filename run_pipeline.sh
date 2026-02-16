@@ -4,7 +4,7 @@ set -euo pipefail
 # -------------------------
 # Config (edit as you like)
 # -------------------------
-TOTAL_TX="${TOTAL_TX:-10000}"
+TOTAL_TX="${TOTAL_TX:-1000}"
 USER_COUNT="${USER_COUNT:-100}"
 SEED="${SEED:-1337}"
 SHARD_SIZE="${SHARD_SIZE:-5000}"

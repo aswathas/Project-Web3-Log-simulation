@@ -1438,11 +1438,66 @@ async function main() {
     }
   }
 
-  copyDir(path.join(base, "RAW"), path.join(team, "RAW"));
+  // Function to copy RAW/code directory but filter out attacker contract codes from NDJSON files for TEAM_BUNDLE
+  function copyCodeDirFiltered(src, dst, excludeAttackers = false, attacker_addrs = []) {
+    ensureDir(dst);
+    const attacker_set = new Set(attacker_addrs.map(a => a.toLowerCase()));
+    
+    for (const ent of fs.readdirSync(src, { withFileTypes: true })) {
+      const s = path.join(src, ent.name);
+      const d = path.join(dst, ent.name);
+      
+      if (ent.isDirectory()) {
+        copyDir(s, d);
+      } else if (ent.isFile() && ent.name.startsWith("codes_") && ent.name.endsWith(".ndjson") && excludeAttackers) {
+        // Filter codes NDJSON file to exclude attacker contract codes
+        const lines = fs.readFileSync(s, "utf8").split("\n").filter(line => line.trim());
+        ensureDir(path.dirname(d));
+        const filtered = [];
+        for (const line of lines) {
+          try {
+            const doc = JSON.parse(line);
+            // Keep token_meta entries, filter out code entries for attackers
+            if (doc.doc_type === "token_meta" || (doc.doc_type === "code" && !attacker_set.has(doc.address.toLowerCase()))) {
+              filtered.push(line);
+            }
+          } catch (_) {
+            // Skip malformed lines
+          }
+        }
+        fs.writeFileSync(d, filtered.join("\n") + (filtered.length > 0 ? "\n" : ""));
+      } else if (ent.isFile() && ent.name.startsWith("token_meta_") && ent.name.endsWith(".ndjson") && excludeAttackers) {
+        // Copy token_meta files as-is (no attacker filtering needed)
+        fs.copyFileSync(s, d);
+      } else {
+        fs.copyFileSync(s, d);
+      }
+    }
+  }
+
+  // Copy RAW for TEAM_BUNDLE with code filtering
+  const rawTeam = path.join(team, "RAW");
+  ensureDir(rawTeam);
+  for (const ent of fs.readdirSync(path.join(base, "RAW"), { withFileTypes: true })) {
+    const s = path.join(base, "RAW", ent.name);
+    const d = path.join(rawTeam, ent.name);
+    if (ent.isDirectory()) {
+      if (ent.name === "code") {
+        // Filter attacker codes from code directory for TEAM_BUNDLE
+        copyCodeDirFiltered(s, d, true, truth.attackers);
+      } else {
+        copyDir(s, d);
+      }
+    } else {
+      fs.copyFileSync(s, d);
+    }
+  }
+  
   copyDir(path.join(base, "DERIVED"), path.join(team, "DERIVED"));
   copyABIDirFiltered(abiDir, path.join(team, "ABI"), true);  // Exclude attacker ABIs for TEAM
   copyDir(metaDir, path.join(team, "META"));
 
+  // Copy RAW for RESEARCH_BUNDLE unfiltered
   copyDir(path.join(base, "RAW"), path.join(research, "RAW"));
   copyDir(path.join(base, "DERIVED"), path.join(research, "DERIVED"));
   copyDir(abiDir, path.join(research, "ABI"));  // Full ABIs for RESEARCH
